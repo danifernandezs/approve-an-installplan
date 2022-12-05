@@ -1,0 +1,39 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+  - github.com/danifernandezs/approve-an-installplan/overlays/global?ref=4.11
+
+patchesJson6902:
+# Patching all the RBAC resources
+- target:
+    kind: ServiceAccount
+    name: approver-sa
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: openshift-compliance
+- target:
+    kind: Role
+    name: approver
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: openshift-compliance
+- target:
+    kind: RoleBinding
+    name: installplan-approver-binding
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: openshift-compliance
+# Patching the approver JOB
+- target:
+    kind: Job
+    name: approve-pending-installplan
+  patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: openshift-compliance
