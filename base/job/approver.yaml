@@ -1,0 +1,71 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: approve-pending-installplan
+spec:
+  template:
+    spec:
+      containers:
+        - image: registry.redhat.io/openshift4/ose-cli:v4.11
+          env:
+            - name: SLEEP
+              value: "30"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              export HOME=/tmp/approver
+
+              echo "This job is going to approve the operator install."
+              echo "First of all, we are going to wait a few seconds to make sure the InstallPlan gets created first."
+              echo "Sleeping $SLEEP seconds, you can adjust this value with an environment variable."
+
+              echo ""
+              sleep $SLEEP
+              echo ""
+
+              for subscription in `oc get subscriptions.operators.coreos.com -o jsonpath='{.items[*].metadata.name}'`
+              do
+                echo "Obtaining data from the subscription: '$subscription'"
+
+                installplan=$(oc get subscriptions.operators.coreos.com --field-selector metadata.name=${subscription} -o jsonpath='{.items[0].status.installPlanRef.name}')
+
+                echo -n "The installplan approved status is: "
+                oc get installplan $installplan -o jsonpath="{.spec.approved}"
+                echo ""
+
+                if [ "`oc get installplan $installplan -o jsonpath="{.spec.approved}"`" == "false" ]; then
+
+                  echo "Approving installPlan $installplan for the subscription $subscription"
+                  echo ""
+
+                  oc patch installplan $installplan --type=json -p='[{"op":"replace","path": "/spec/approved", "value": true}]'
+                  echo ""
+                  echo ""
+                  sleep 2
+
+                else
+                  echo "Install Plan '$installplan' is already approved"
+                  echo ""
+                  echo ""
+                  sleep 2
+                fi
+
+              done
+          imagePullPolicy: Always
+          name: approver
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+      dnsPolicy: ClusterFirst
+      restartPolicy: OnFailure
+      serviceAccount: approver-sa
+      serviceAccountName: approver-sa
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
