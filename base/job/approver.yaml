@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       containers:
-        - image: registry.redhat.io/openshift4/ose-cli:v4.11
+        - image: registry.redhat.io/openshift4/ose-cli:v4.12
           env:
             - name: SLEEP
               value: "30"
