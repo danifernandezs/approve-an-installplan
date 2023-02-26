@@ -4,7 +4,8 @@ kind: Kustomization
 
 bases:
   - ../../base
-  - github.com/danifernandezs/approve-an-installplan/overlays/global?ref=4.11
+# Referring to the latest tag (you can select another desired tag)
+  - github.com/danifernandezs/approve-an-installplan/overlays/global?ref=latest
 
 patchesJson6902:
 # Patching all the RBAC resources
